@@ -1,0 +1,202 @@
+// This is a generated file, do not edit.
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id             String    @id @default(uuid())
+  firebaseUid    String    @unique
+  email          String    @unique
+  name           String
+  mobile         String?
+  profilePicture String?
+  refreshToken   String?   
+  isTwoFactorEnabled Boolean @default(false)
+  twoFactorSecret    String?
+  twoFactorType      String?   
+  isEmailVerified    Boolean   @default(false)
+  isMobileVerified   Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  lastLogin      DateTime?
+  fcmToken       String?
+  
+  blogs          Blog[]
+  notifications  Notification[]
+  activityLogs   ActivityLog[]
+  sessions       Session[]
+  installedItems UserInstalledItem[]
+
+  @@index([email])
+  @@index([firebaseUid])
+  @@index([createdAt])
+  @@map("users")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  message   String
+  type      String   @default("INFO") 
+  read      Boolean  @default(false)
+  data      Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, read])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  module    String   
+  details   String?
+  ip        String?
+  status    String   @default("SUCCESS")
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([module, action])
+  @@map("activity_logs")
+}
+
+model ErrorLog {
+  id        String   @id @default(uuid())
+  type      String
+  message   String
+  stack     String?  @db.Text
+  node      String   @default("GATEWAY")
+  severity  String   @default("ERROR") 
+  createdAt DateTime @default(now())
+
+  @@map("error_logs")
+}
+
+model AccessLog {
+  id        String   @id @default(uuid())
+  path      String
+  method    String
+  status    Int
+  latency   Int      
+  ip        String?
+  userId    String?
+  createdAt DateTime @default(now())
+
+  @@map("access_logs")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  device    String
+  os        String
+  browser   String
+  ip        String
+  location  String?
+  lastActive DateTime @default(now())
+  token     String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+  @@index([isActive])
+  @@map("sessions")
+}
+
+model Setting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Json
+  group     String?  
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
+model Blog {
+  id             String   @id @default(uuid())
+  title          String
+  slug           String   @unique
+  content        String   @db.Text
+  excerpt        String?  @db.Text
+  coverImage     String?
+  authorId       String
+  author         User     @relation(fields: [authorId], references: [id])
+  seoTitle       String?
+  seoDescription String?
+  seoKeywords    String?
+  published      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([authorId])
+  @@index([published])
+  @@index([createdAt])
+  @@map("blogs")
+}
+
+model AdBanner {
+  id        String   @id @default(uuid())
+  name      String
+  imageUrl  String
+  link      String
+  placement String   
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("ad_banners")
+}
+
+model MarketplaceItem {
+  id          String   @id @default(uuid())
+  name        String
+  type        String   @default("THEME") // e.g. THEME, PLUGIN
+  description String?  @db.Text
+  assets      Json?    // e.g., URLs to font files, images
+  config      Json?    // Specific configuration data (colors, styles)
+  price       Float    @default(0)
+  author      String   @default("System")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  installedBy UserInstalledItem[]
+  
+  @@unique([name, type])
+  @@index([type, isActive])
+  @@index([createdAt])
+  @@map("marketplace_items")
+}
+
+model UserInstalledItem {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  itemId    String
+  item      MarketplaceItem @relation(fields: [itemId], references: [id])
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, itemId])
+  @@index([userId])
+  @@index([itemId])
+  @@index([userId, isActive])
+  @@map("user_installed_items")
+}
