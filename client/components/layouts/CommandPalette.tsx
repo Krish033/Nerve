@@ -168,10 +168,10 @@ export const CommandPalette = () => {
                         onMouseEnter={() => setSelectedIndex(globalIndex)}
                         className={cn(
                           "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-left group",
-                          isSelected ? "bg-muted text-foreground border border-border/50" : "hover:bg-muted/60 text-foreground"
+                          isSelected ? "bg-accent/10 text-accent border border-accent/20" : "hover:bg-accent/5 text-foreground"
                         )}
                       >
-                        <item.icon className={cn("h-4 w-4 shrink-0", isSelected ? "text-foreground" : "text-muted-foreground")} />
+                        <item.icon className={cn("h-4 w-4 shrink-0", isSelected ? "text-accent" : "text-muted-foreground")} />
                         <div className="flex-1 min-w-0">
                           <span className="text-sm">{item.label}</span>
                           {item.description && (

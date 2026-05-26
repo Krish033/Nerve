@@ -158,15 +158,15 @@ export const SecondarySidebar = () => {
               className={cn(
                 "group flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200",
                 active
-                  ? "bg-muted/50 text-foreground font-medium border border-border/50"
-                  : "text-muted-foreground hover:bg-muted/30 hover:text-foreground",
+                  ? "bg-accent/10 text-accent font-medium border border-accent/20"
+                  : "text-muted-foreground hover:bg-accent/5 hover:text-foreground",
               )}
             >
               <div className="flex items-center gap-3 min-w-0">
                 {Icon && (
                   <Icon className={cn(
                     "h-4 w-4 shrink-0 transition-colors",
-                    active ? "text-foreground" : "text-muted-foreground/60 group-hover:text-foreground"
+                    active ? "text-accent" : "text-muted-foreground/60 group-hover:text-foreground"
                   )} />
                 )}
                 <span className="truncate">{item.name}</span>
@@ -175,7 +175,7 @@ export const SecondarySidebar = () => {
               {item.count !== undefined && (
                 <span className={cn(
                   "shrink-0 text-[11px] font-medium tabular-nums px-2 py-0.5 rounded-full",
-                  active ? "bg-background text-muted-foreground border border-border/50" : "bg-muted text-muted-foreground"
+                  active ? "bg-accent/20 text-accent" : "bg-muted text-muted-foreground"
                 )}>
                   {item.count}
                 </span>
