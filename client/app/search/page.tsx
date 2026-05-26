@@ -10,11 +10,50 @@ import {
   ArrowUpDown,
   Zap,
   Activity,
-  Bell
+  Bell,
+  FileText,
+  User,
+  Settings,
+  AlertTriangle,
+  Clock,
+  X
 } from "lucide-react";
 import { SearchResultItem, useSearchResults } from "./_partials/imports/queries";
 import { cn, safeFormatDistanceToNow } from "@/lib/utils";
 import { Heading } from "@/components/shared/heading";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+// Simple Badge component since it's not available
+function Badge({ children, variant = "default", className = "" }: { children: React.ReactNode; variant?: "default" | "outline" | "secondary"; className?: string }) {
+  const variantStyles = {
+    default: "bg-primary text-primary-foreground hover:bg-primary/80",
+    secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+    outline: "border border-input bg-transparent hover:bg-accent hover:text-accent-foreground"
+  };
+  return (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${variantStyles[variant]} ${className}`}>
+      {children}
+    </span>
+  );
+}
+
+const categoryIcons = {
+  Intel: Bell,
+  Config: Settings,
+  Identity: User,
+  Ops: AlertTriangle,
+  Chat: FileText,
+};
+
+const categoryColors = {
+  Intel: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+  Config: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+  Identity: "bg-green-500/10 text-green-500 border-green-500/20",
+  Ops: "bg-orange-500/10 text-orange-500 border-orange-500/20",
+  Chat: "bg-pink-500/10 text-pink-500 border-pink-500/20",
+};
 
 function SearchResults() {
   const searchParams = useSearchParams();
@@ -23,10 +62,10 @@ function SearchResults() {
   const router = useRouter();
 
   const [searchInput, setSearchInput] = useState(queryParam);
-  const [sortBy, setSortBy] = useState<"Relevancy" | "Newest">("Relevancy");
+  const [sortBy, setSortBy] = useState<"relevance" | "newest">("relevance");
 
   const { data: results, isLoading: loading, error: queryError } = useSearchResults(queryParam);
-  const error = queryError ? "The intelligence node is currently unreachable." : null;
+  const error = queryError ? "Search service is currently unavailable." : null;
 
   useEffect(() => {
     setSearchInput(queryParam);
@@ -37,6 +76,11 @@ function SearchResults() {
     if (searchInput.trim()) {
       router.push(`/search?q=${encodeURIComponent(searchInput.trim())}&tab=${activeTab}`);
     }
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput("");
+    router.push("/search");
   };
 
   const allResults = useMemo(() => {
@@ -51,7 +95,7 @@ function SearchResults() {
       ...(results.logs?.access || []).map(i => ({ ...i, category: 'Ops', title: `${i.method} ${i.path}`, message: `Source IP: ${i.ip}` })),
     ];
 
-    if (sortBy === "Newest") {
+    if (sortBy === "newest") {
       return items.sort((a, b) => {
         const valueA = a.createdAt || a.date;
         const valueB = b.createdAt || b.date;
@@ -80,118 +124,181 @@ function SearchResults() {
     };
   }, [results, allResults]);
 
+  const tabs = [
+    { id: "ALL", label: "All Results", count: counts.ALL },
+    { id: "Intel", label: "Notifications", count: counts.Intel },
+    { id: "Identity", label: "Users", count: counts.Identity },
+    { id: "Config", label: "Settings", count: counts.Config },
+    { id: "Ops", label: "Logs", count: counts.Ops },
+  ];
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Header - Refined style */}
-      <Heading 
-        title="Global Search" 
-        description="Unified intelligence index and matrix scanner" 
-      />
-      <div className="space-y-12">
+    <div className="space-y-6 animate-in fade-in duration-500">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <Heading 
+          title="Search" 
+          description="Search across notifications, users, settings, and logs" 
+        />
+        <Badge variant="secondary" className="w-fit">
+          {counts.ALL} results found
+        </Badge>
+      </div>
 
-
-        <div className="flex flex-col md:flex-row gap-8 pt-4 border-t border-border/40">
-          <form onSubmit={handleSearchSubmit} className="relative flex-1 group">
-            <input 
-              type="text"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Enter signature to scan matrix..."
-              className="w-full h-12 bg-transparent border-0 border-b border-border focus:border-primary rounded-none pl-0 pr-10 text-[18px] font-semibold placeholder:text-muted-foreground/20 transition-all tracking-tight"
-            />
-            <Search className="absolute right-0 top-1/2 -translate-y-1/2 h-6 w-6 text-muted-foreground/20 group-focus-within:text-primary transition-colors" />
-          </form>
-          
-          <button 
-            onClick={() => setSortBy(sortBy === "Relevancy" ? "Newest" : "Relevancy")}
-            className="flex flex-col items-end group"
-          >
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/30 leading-none mb-1">Sort Order</p>
-            <div className="flex items-center gap-2">
-              <span className="text-[14px] font-semibold text-primary group-hover:underline underline-offset-4">{sortBy}</span>
-              <ArrowUpDown className="h-4 w-4 text-primary/40" />
+      {/* Search Bar Card */}
+      <Card className="border-dashed">
+        <CardContent className="pt-6">
+          <form onSubmit={handleSearchSubmit} className="flex gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Search for notifications, users, settings..."
+                className="pl-10 pr-10"
+              />
+              {searchInput && (
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-muted transition-colors"
+                >
+                  <X className="h-3 w-3 text-muted-foreground" />
+                </button>
+              )}
             </div>
-          </button>
-        </div>
+            <Button type="submit">
+              <Search className="h-4 w-4 mr-2" />
+              Search
+            </Button>
+            <Button 
+              type="button"
+              variant="outline"
+              onClick={() => setSortBy(sortBy === "relevance" ? "newest" : "relevance")}
+              className="gap-2"
+            >
+              <ArrowUpDown className="h-4 w-4" />
+              {sortBy === "relevance" ? "Relevance" : "Newest"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Category Filter Buttons */}
+      <div className="flex flex-wrap gap-2">
+        {tabs.map((tab) => (
+          <Button
+            key={tab.id}
+            variant={activeTab === tab.id ? "default" : "outline"}
+            size="sm"
+            onClick={() => router.push(`/search?q=${encodeURIComponent(queryParam)}&tab=${tab.id}`)}
+            disabled={tab.count === 0 && tab.id !== "ALL"}
+            className="gap-2"
+          >
+            {tab.label}
+            {tab.count > 0 && (
+              <Badge variant={activeTab === tab.id ? "secondary" : "outline"} className="h-4 min-w-[1rem] px-1 text-[10px] ml-1">
+                {tab.count}
+              </Badge>
+            )}
+          </Button>
+        ))}
       </div>
 
       {/* Results Section */}
-      <div className="space-y-16">
+      <div className="space-y-4">
         {loading ? (
-          <div className="py-32 flex flex-col items-center justify-center gap-6 opacity-40">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <p className="text-[12px] font-bold tracking-widest uppercase">Scanning Buffer...</p>
-          </div>
+          <Card className="border-dashed">
+            <CardContent className="py-16 flex flex-col items-center justify-center gap-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Searching...</p>
+            </CardContent>
+          </Card>
         ) : error ? (
-          <div className="py-32 flex flex-col items-center justify-center gap-6 text-red-500/60 bg-red-500/5 border border-red-500/10 rounded-3xl">
-            <ShieldAlert className="h-12 w-12" />
-            <div className="text-center space-y-1">
-              <p className="text-[15px] font-bold tracking-tight uppercase">Protocol Error</p>
-              <p className="text-[13px] font-medium opacity-60 italic tracking-tight">{error}</p>
-            </div>
-          </div>
-        ) : !queryParam ? (
-          <div className="py-32 flex flex-col items-center justify-center gap-6 opacity-10">
-            <Activity className="h-16 w-16" />
-            <p className="text-[12px] font-bold tracking-[0.5em] uppercase">Matrix Idle</p>
-          </div>
-        ) : filteredResults.length === 0 ? (
-          <div className="py-32 flex flex-col items-center justify-center gap-6 opacity-10">
-            <Zap className="h-16 w-16" />
-            <p className="text-[12px] font-bold tracking-[0.5em] uppercase">Zero Matches Found</p>
-          </div>
-        ) : (
-          <div className="space-y-16">
-            {filteredResults.map((item) => (
-              <div 
-                key={`${item.category}-${item.id}`} 
-                className="group transition-all relative border-l-2 border-border/40 hover:border-primary pl-12"
-              >
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-6">
-                    <div className="flex items-center gap-6">
-                      <span className={cn(
-                        "text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border",
-                        item.category === 'Intel' ? "border-primary/20 text-primary" :
-                        item.category === 'Chat' ? "border-green-500/20 text-green-500" :
-                        item.category === 'Identity' ? "border-purple-500/20 text-purple-500" :
-                        item.category === 'Ops' ? "border-red-500/20 text-red-500" :
-                        "border-border text-muted-foreground/40"
-                      )}>
-                        {item.category} Fragment
-                      </span>
-                      <span className="text-[10px] font-mono font-bold text-muted-foreground/10 uppercase tracking-tighter">
-                        VEC_{item.id.substring(0, 8).toUpperCase()}
-                      </span>
-                    </div>
-                    <span className="text-[11px] font-mono font-bold text-muted-foreground/20 uppercase tracking-tighter">
-                      {item.createdAt || item.date ? safeFormatDistanceToNow(item.createdAt || item.date) : 'Historical Point'}
-                    </span>
-                  </div>
-
-                  <div 
-                    onClick={() => {
-                      if (item.category === 'Intel') router.push('/notifications');
-                      if (item.category === 'Ops') router.push('/settings/logs/activity');
-                      if (item.category === 'Identity') router.push(`/admin/users/${item.id}`);
-                    }}
-                    className="space-y-3 cursor-pointer group/content"
-                  >
-                    <h3 className="text-2xl font-bold tracking-tight text-foreground group-hover/content:text-primary transition-colors">
-                      {item.title || item.name || item.key || 'Untitled Vector'}
-                    </h3>
-                    <p className="text-[16px] font-medium leading-relaxed text-muted-foreground group-hover/content:text-foreground transition-colors max-w-5xl tracking-tight">
-                      {item.content || item.message || item.lastMessage || item.email || 'No payload description available in current node buffer.'}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0 duration-500 pt-3">
-                    <span className="text-[11px] font-bold text-primary uppercase tracking-[0.2em]">Acknowledge Vector</span>
-                    <ChevronRight className="h-4 w-4 text-primary" />
-                  </div>
-                </div>
+          <Card className="border-destructive/50 bg-destructive/5">
+            <CardContent className="py-16 flex flex-col items-center justify-center gap-4">
+              <ShieldAlert className="h-10 w-10 text-destructive" />
+              <div className="text-center">
+                <p className="font-semibold text-destructive">Search Error</p>
+                <p className="text-sm text-muted-foreground">{error}</p>
               </div>
-            ))}
+            </CardContent>
+          </Card>
+        ) : !queryParam ? (
+          <Card className="border-dashed">
+            <CardContent className="py-16 flex flex-col items-center justify-center gap-4 text-muted-foreground">
+              <Search className="h-12 w-12 opacity-20" />
+              <div className="text-center">
+                <p className="font-medium">Enter a search term</p>
+                <p className="text-sm opacity-60">Search across all your data</p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : filteredResults.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="py-16 flex flex-col items-center justify-center gap-4 text-muted-foreground">
+              <Zap className="h-12 w-12 opacity-20" />
+              <div className="text-center">
+                <p className="font-medium">No results found</p>
+                <p className="text-sm opacity-60">Try adjusting your search terms</p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {filteredResults.map((item) => {
+              const CategoryIcon = categoryIcons[item.category as keyof typeof categoryIcons] || FileText;
+              return (
+                <Card 
+                  key={`${item.category}-${item.id}`}
+                  className="group hover:border-primary/50 transition-colors cursor-pointer"
+                  onClick={() => {
+                    if (item.category === 'Intel') router.push('/notifications');
+                    if (item.category === 'Ops') router.push('/settings/logs/activity');
+                    if (item.category === 'Identity') router.push(`/admin/users/${item.id}`);
+                  }}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-4">
+                      <div className={cn(
+                        "p-2 rounded-lg shrink-0",
+                        categoryColors[item.category as keyof typeof categoryColors] || "bg-muted text-muted-foreground"
+                      )}>
+                        <CategoryIcon className="h-4 w-4" />
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="outline" className="text-[10px]">
+                            {item.category}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground font-mono">
+                            ID: {item.id.substring(0, 8)}
+                          </span>
+                          <span className="text-xs text-muted-foreground flex items-center gap-1 ml-auto">
+                            <Clock className="h-3 w-3" />
+                            {item.createdAt || item.date 
+                              ? safeFormatDistanceToNow(item.createdAt || item.date) 
+                              : 'Unknown'}
+                          </span>
+                        </div>
+                        
+                        <h3 className="font-semibold mt-2 group-hover:text-primary transition-colors">
+                          {item.title || item.name || item.key || 'Untitled'}
+                        </h3>
+                        
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                          {item.content || item.message || item.lastMessage || item.email || 'No description available'}
+                        </p>
+                      </div>
+                      
+                      <ChevronRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>

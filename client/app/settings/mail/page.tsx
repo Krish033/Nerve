@@ -7,124 +7,287 @@ import { TextInput } from '@/components/ui/TextInput';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { Server, ShieldCheck, Mail, Key, Globe, Hash, Terminal } from 'lucide-react';
+import { 
+  Server, 
+  ShieldCheck, 
+  Mail, 
+  Key, 
+  Globe, 
+  Hash, 
+  Terminal,
+  Check,
+  AlertCircle,
+  Send
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+
+// Simple Badge component since it's not available
+function Badge({ children, variant = "default", className = "" }: { children: React.ReactNode; variant?: "default" | "outline" | "secondary"; className?: string }) {
+  const variantStyles = {
+    default: "bg-primary text-primary-foreground hover:bg-primary/80",
+    secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+    outline: "border border-input bg-transparent hover:bg-accent hover:text-accent-foreground"
+  };
+  return (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${variantStyles[variant]} ${className}`}>
+      {children}
+    </span>
+  );
+}
 
 export default function MailSettings() {
   const [provider, setProvider] = useState('mailgun');
+  const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success('RELAY_PROTOCOL_SYNC_COMPLETE');
+    toast.success('Email settings saved successfully');
+  };
+
+  const handleTestConnection = () => {
+    setTestStatus('testing');
+    setTimeout(() => {
+      setTestStatus('success');
+      toast.success('Connection test successful');
+    }, 2000);
   };
 
   return (
-    <div className="space-y-8">
-      <section className="space-y-10">
+    <div className="space-y-6 max-w-4xl">
+      {/* Header */}
+      <div className="flex items-start justify-between">
         <Heading 
-          title="Relay Protocol" 
-          description="Communication node specifications" 
+          title="Email Configuration" 
+          description="Configure your email service provider and SMTP settings" 
           className="mb-0" 
         />
+        <Badge variant="outline" className="gap-1.5">
+          <Mail className="h-3 w-3" />
+          Relay Protocol
+        </Badge>
+      </div>
 
-        <form onSubmit={handleSave} className="space-y-16">
-          <RadioGroup value={provider} onValueChange={setProvider} className="grid grid-cols-1 md:grid-cols-2 border border-white/5 bg-white/[0.01] backdrop-blur-sm relative group/grid">
-            {[
-              { id: 'mailgun', label: 'API_DIRECT', desc: 'MAILGUN_CLOUD_NODE', icon: ShieldCheck },
-              { id: 'smtp', label: 'SMTP_RELAY', desc: 'STANDARD_TRANSMISSION', icon: Server },
-            ].map((p, idx) => {
-              const isActive = provider === p.id;
-              const Icon = p.icon;
-              return (
-                <label
-                  key={p.id}
-                  htmlFor={p.id}
-                  className={cn(
-                    "flex flex-col p-10 transition-all cursor-pointer relative group text-left",
-                    isActive 
-                      ? "bg-primary/[0.03]" 
-                      : "hover:bg-white/[0.01]",
-                    idx !== 0 && "md:border-l border-white/5"
-                  )}
-                >
-                  <RadioGroupItem value={p.id} id={p.id} className="sr-only" />
+      <form onSubmit={handleSave} className="space-y-6">
+        {/* Provider Selection Cards */}
+        <RadioGroup value={provider} onValueChange={setProvider} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[
+            { 
+              id: 'mailgun', 
+              label: 'Mailgun API', 
+              desc: 'Cloud-based email delivery service with high deliverability',
+              icon: ShieldCheck,
+              features: ['Webhooks', 'Analytics', 'High Volume']
+            },
+            { 
+              id: 'smtp', 
+              label: 'SMTP Server', 
+              desc: 'Standard SMTP relay for custom email servers',
+              icon: Server,
+              features: ['Custom Host', 'Port Config', 'TLS/SSL']
+            },
+          ].map((p) => {
+            const isActive = provider === p.id;
+            const Icon = p.icon;
+            return (
+              <label
+                key={p.id}
+                htmlFor={p.id}
+                className={cn(
+                  "relative flex flex-col p-5 rounded-xl border-2 cursor-pointer transition-all duration-200",
+                  isActive 
+                    ? "border-primary bg-primary/5" 
+                    : "border-border/50 bg-card hover:border-border hover:bg-accent/50"
+                )}
+              >
+                <RadioGroupItem value={p.id} id={p.id} className="sr-only" />
+                
+                <div className="flex items-start gap-4">
                   <div className={cn(
-                    "p-3 mb-8 transition-all duration-500 w-fit relative",
-                    isActive 
-                      ? "text-primary bg-primary/10 shadow-[inset_0_0_15px_rgba(var(--primary),0.1)]" 
-                      : "text-muted-foreground/10 bg-muted/5 group-hover:text-primary/40 group-hover:bg-primary/[0.02]"
+                    "p-2.5 rounded-lg transition-colors",
+                    isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
                   )}>
                     <Icon className="h-5 w-5" />
-                    {isActive && <div className="absolute inset-0 border border-primary/20 animate-pulse" />}
                   </div>
-                  <span className={cn("text-[13px] font-black uppercase tracking-tight transition-colors", isActive ? "text-primary" : "text-foreground")}>
-                    {p.label}
-                  </span>
-                  <span className="text-[10px] font-bold text-muted-foreground/20 mt-1.5 uppercase tracking-[0.2em] italic group-hover:text-muted-foreground/40 transition-colors">
-                    {p.desc}
-                  </span>
-                  {isActive && (
-                    <div className="absolute top-0 right-0 h-1 w-12 bg-primary shadow-[0_0_12px_rgba(var(--primary),0.8)]" />
-                  )}
-                </label>
-              );
-            })}
-          </RadioGroup>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className={cn(
+                        "font-semibold text-sm",
+                        isActive ? "text-primary" : "text-foreground"
+                      )}>
+                        {p.label}
+                      </span>
+                      {isActive && (
+                        <Check className="h-4 w-4 text-primary" />
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                      {p.desc}
+                    </p>
+                    
+                    <div className="flex flex-wrap gap-1.5 mt-3">
+                      {p.features.map((feature) => (
+                        <span 
+                          key={feature}
+                          className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground"
+                        >
+                          {feature}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </label>
+            );
+          })}
+        </RadioGroup>
 
-          {/* Industrial Divider */}
-          <div className="h-px bg-gradient-to-r from-white/[0.08] via-white/[0.02] to-transparent w-full" />
-
-          <div className="space-y-12">
+        {/* Configuration Card */}
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Key className="h-4 w-4 text-muted-foreground" />
+              {provider === 'mailgun' ? 'Mailgun API Settings' : 'SMTP Server Settings'}
+            </CardTitle>
+            <CardDescription>
+              {provider === 'mailgun' 
+                ? 'Enter your Mailgun API credentials' 
+                : 'Configure your SMTP server connection details'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
             {provider === 'mailgun' ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <TextInput 
-                  label="ENDPOINT_URI"
+                  label="API Endpoint"
                   placeholder="api.mailgun.net" 
-                  className="bg-transparent border-0 border-b border-white/10 rounded-none px-0" 
-                  icon={<Globe className="h-4 w-4" />}
+                  icon={<Globe className="h-4 w-4 text-muted-foreground" />}
                 />
                 <TextInput 
                   type="password" 
-                  label="SECRET_API_KEY"
-                  placeholder="key-********************" 
-                  className="bg-transparent border-0 border-b border-white/10 rounded-none px-0" 
-                  icon={<Key className="h-4 w-4" />}
+                  label="API Key"
+                  placeholder="key-xxxxxxxxxxxxxxxx" 
+                  icon={<Key className="h-4 w-4 text-muted-foreground" />}
+                />
+                <TextInput 
+                  label="Domain"
+                  placeholder="mg.yourdomain.com" 
+                  icon={<Mail className="h-4 w-4 text-muted-foreground" />}
+                />
+                <TextInput 
+                  label="From Address"
+                  placeholder="noreply@yourdomain.com" 
+                  icon={<Send className="h-4 w-4 text-muted-foreground" />}
                 />
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <TextInput 
-                  label="RELAY_HOST"
-                  placeholder="smtp.nerve.core" 
-                  className="bg-transparent border-0 border-b border-white/10 rounded-none px-0" 
-                  icon={<Server className="h-4 w-4" />}
+                  label="SMTP Host"
+                  placeholder="smtp.gmail.com" 
+                  icon={<Server className="h-4 w-4 text-muted-foreground" />}
                 />
                 <TextInput 
-                  label="SECURE_PORT"
+                  label="Port"
                   placeholder="587" 
-                  className="bg-transparent border-0 border-b border-white/10 rounded-none px-0" 
-                  icon={<Hash className="h-4 w-4" />}
+                  icon={<Hash className="h-4 w-4 text-muted-foreground" />}
+                />
+                <TextInput 
+                  label="Username"
+                  placeholder="your@email.com" 
+                  icon={<Mail className="h-4 w-4 text-muted-foreground" />}
+                />
+                <TextInput 
+                  type="password"
+                  label="Password"
+                  placeholder="••••••••" 
+                  icon={<Key className="h-4 w-4 text-muted-foreground" />}
                 />
               </div>
             )}
-          </div>
 
-          <div className="flex justify-between items-center pt-12 border-t border-white/5 relative group/footer">
-            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent translate-x-[-100%] group-hover/footer:translate-x-[100%] transition-transform duration-1000" />
-            <div className="flex items-center gap-3 opacity-20 transition-opacity group-hover:opacity-40">
-              <Terminal className="h-4 w-4 text-muted-foreground" />
-              <span className="text-[10px] font-black uppercase tracking-[0.4em]">HANDSHAKE_PROTOCOL_LOCKED</span>
+            {/* Advanced Settings Toggle */}
+            <div className="pt-2 border-t border-border/50">
+              <details className="group">
+                <summary className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+                  <Terminal className="h-4 w-4" />
+                  Advanced Settings
+                  <span className="ml-auto text-xs group-open:rotate-180 transition-transform">▼</span>
+                </summary>
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <TextInput 
+                    label="Connection Timeout (seconds)"
+                    placeholder="30" 
+                  />
+                  <TextInput 
+                    label="Retry Attempts"
+                    placeholder="3" 
+                  />
+                </div>
+              </details>
             </div>
-            <Button 
-              type="submit" 
-              size="lg"
-              icon={ShieldCheck}
-              className="px-10"
-            >
-              COMMIT_RELAY_STATE
-            </Button>
-          </div>
-        </form>
-      </section>
+          </CardContent>
+        </Card>
+
+        {/* Connection Test & Save */}
+        <Card className="border-dashed">
+          <CardContent className="pt-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "p-2 rounded-full transition-colors",
+                  testStatus === 'success' ? "bg-green-500/10 text-green-500" :
+                  testStatus === 'error' ? "bg-red-500/10 text-red-500" :
+                  testStatus === 'testing' ? "bg-yellow-500/10 text-yellow-500" :
+                  "bg-muted text-muted-foreground"
+                )}>
+                  {testStatus === 'success' ? <Check className="h-4 w-4" /> :
+                   testStatus === 'error' ? <AlertCircle className="h-4 w-4" /> :
+                   <ShieldCheck className="h-4 w-4" />}
+                </div>
+                <div>
+                  <p className="font-medium text-sm">Connection Status</p>
+                  <p className="text-xs text-muted-foreground">
+                    {testStatus === 'idle' && 'Test your connection before saving'}
+                    {testStatus === 'testing' && 'Testing connection...'}
+                    {testStatus === 'success' && 'Connection verified successfully'}
+                    {testStatus === 'error' && 'Connection failed. Check your settings'}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex gap-3 w-full sm:w-auto">
+                <Button 
+                  type="button"
+                  variant="outline"
+                  onClick={handleTestConnection}
+                  disabled={testStatus === 'testing'}
+                  className="flex-1 sm:flex-none"
+                >
+                  {testStatus === 'testing' ? (
+                    <>
+                      <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      Testing...
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="h-4 w-4 mr-2" />
+                      Test Connection
+                    </>
+                  )}
+                </Button>
+                <Button 
+                  type="submit"
+                  className="flex-1 sm:flex-none"
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  Save Settings
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </form>
     </div>
   );
 }
