@@ -9,7 +9,6 @@ import {
   User,
   ArrowRight,
   BookOpen,
-  LifeBuoy,
   Lock,
   ListTodo,
   GitBranch,
@@ -53,7 +52,6 @@ const settingsItems: CommandItem[] = [
 
 const helpItems: CommandItem[] = [
   { id: "docs", label: "Documentation", category: "Help", icon: BookOpen, href: "/docs" },
-  { id: "support", label: "Support", category: "Help", icon: LifeBuoy, href: "/support" },
   { id: "marketplace-explore", label: "Explore marketplace", category: "Help", icon: Globe, href: "/marketplace" },
 ];
 

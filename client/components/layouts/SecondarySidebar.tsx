@@ -13,13 +13,9 @@ import {
   Terminal,
   Lock,
   UserCheck,
-  Type,
-  Plug,
   Settings,
   Bell,
   GitBranch,
-  GitCommit,
-  Workflow,
   BookOpen,
 } from "lucide-react";
 import { useLayoutStore } from "@/lib/store/use-layout-store";
@@ -61,11 +57,8 @@ const submenus: Record<string, { title: string; items: SubmenuItem[] }> = {
     title: "GitHub",
     items: [
       { name: "Repositories", href: "/github", icon: GitBranch },
-      { name: "Commits", href: "/github/commits", icon: GitCommit },
-      { name: "Workflows", href: "/github/workflows", icon: Workflow },
       { type: "separator" },
       { type: "label", name: "Account" },
-      { name: "Connect account", href: "/github/connect", icon: Globe },
     ],
   },
   "/profile": {
@@ -100,8 +93,6 @@ const submenus: Record<string, { title: string; items: SubmenuItem[] }> = {
     items: [
       { type: "label", name: "Getting started" },
       { name: "Overview", href: "/docs", icon: BookOpen },
-      { name: "Authentication", href: "/docs#authentication", icon: Lock },
-      { name: "Routing", href: "/docs#routing", icon: Globe },
     ],
   },
 };
