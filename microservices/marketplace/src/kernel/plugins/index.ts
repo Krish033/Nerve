@@ -9,6 +9,7 @@ export * from './contracts';
 
 // Core Runtime
 export { PluginRuntime } from './runtime/plugin-runtime';
+export { PluginRuntimeHardened } from './runtime/plugin-runtime-hardened';
 
 // Registry
 export { PluginRegistry } from './registry/plugin-registry';
@@ -30,3 +31,10 @@ export { PluginEventBus } from './events/plugin-event-bus';
 
 // Security
 export { PluginSecurityManager } from './permissions/plugin-security';
+
+// Isolation & Hardening
+export {
+  PluginCircuitBreaker,
+  PluginTenantGuard,
+  PluginMemoryGuard,
+} from './isolation';
