@@ -38,3 +38,12 @@ export {
   PluginTenantGuard,
   PluginMemoryGuard,
 } from './isolation';
+
+// Installation
+export { PluginInstaller } from './installer/plugin-installer';
+
+// Loaders
+export {
+  PluginRouteLoader,
+  PluginUILoader,
+} from './loader';

@@ -25,9 +25,11 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { PluginRuntime } from '../kernel/plugins/runtime/plugin-runtime';
+import { PluginInstaller } from '../kernel/plugins/installer/plugin-installer';
 import { PluginRegistry } from '../kernel/plugins/registry/plugin-registry';
 import { PluginDiagnostics } from '../kernel/plugins/diagnostics/plugin-diagnostics';
 import { PluginSecurityManager } from '../kernel/plugins/permissions/plugin-security';
+import { PluginRouteLoader, PluginUILoader } from '../kernel/plugins/loader';
 import {
   PluginState,
   PluginInstallationRequest,
@@ -68,9 +70,12 @@ export class PluginsController {
 
   constructor(
     private readonly pluginRuntime: PluginRuntime,
+    private readonly pluginInstaller: PluginInstaller,
     private readonly pluginRegistry: PluginRegistry,
     private readonly pluginDiagnostics: PluginDiagnostics,
     private readonly pluginSecurity: PluginSecurityManager,
+    private readonly routeLoader: PluginRouteLoader,
+    private readonly uiLoader: PluginUILoader,
   ) {}
 
   /**
@@ -150,6 +155,10 @@ export class PluginsController {
 
   /**
    * Upload and install a plugin
+   * 
+   * Complete installation pipeline:
+   * UPLOAD → TEMP STORAGE → VALIDATION → EXTRACTION → MANIFEST PARSE → 
+   * SECURITY CHECK → DEPENDENCY CHECK → REGISTRATION → ACTIVATION
    */
   @Post('install')
   @HttpCode(HttpStatus.CREATED)
@@ -170,9 +179,11 @@ export class PluginsController {
 
     this.logger.log(`Installing plugin from upload: ${file.originalname}`);
 
-    const result = await this.pluginRuntime.installPlugin(file.buffer, {
+    // Use the complete installation pipeline
+    const result = await this.pluginInstaller.install(file.buffer, {
       force: body.force,
       skipValidation: body.skipValidation,
+      autoEnable: body.autoEnable,
     });
 
     if (!result.success) {
@@ -182,25 +193,17 @@ export class PluginsController {
       };
     }
 
-    // Auto-enable if requested
-    if (body.autoEnable && result.data) {
-      const enableResult = await this.pluginRuntime.enablePlugin(result.data.id);
-      if (!enableResult.success) {
-        return {
-          success: true,
-          data: {
-            plugin: result.data,
-            warning: `Plugin installed but auto-enable failed: ${enableResult.error?.message}`,
-          },
-        };
-      }
-    }
-
     return {
       success: true,
       data: {
-        plugin: result.data,
-        message: `Plugin ${result.data?.manifest.name} installed successfully`,
+        pluginId: result.data?.pluginId,
+        name: result.data?.manifest.name,
+        version: result.data?.manifest.version,
+        state: result.data?.state,
+        installedAt: result.data?.installedAt,
+        logs: result.data?.logs,
+        warnings: result.data?.warnings,
+        message: `Plugin ${result.data?.manifest.name} v${result.data?.manifest.version} installed successfully`,
       },
     };
   }
@@ -213,9 +216,7 @@ export class PluginsController {
     @Param('id') pluginId: string,
     @Body() body: EnablePluginDto,
   ) {
-    const result = await this.pluginRuntime.enablePlugin(pluginId, {
-      reason: body.reason,
-    });
+    const result = await this.pluginInstaller.enablePlugin(pluginId);
 
     if (!result.success) {
       return {
@@ -240,10 +241,7 @@ export class PluginsController {
     @Param('id') pluginId: string,
     @Body() body: DisablePluginDto,
   ) {
-    const result = await this.pluginRuntime.disablePlugin(pluginId, {
-      reason: body.reason,
-      graceful: body.graceful,
-    });
+    const result = await this.pluginInstaller.disablePlugin(pluginId);
 
     if (!result.success) {
       return {
@@ -268,7 +266,7 @@ export class PluginsController {
     @Param('id') pluginId: string,
     @Body() body: UninstallPluginDto,
   ) {
-    const result = await this.pluginRuntime.uninstallPlugin(pluginId, {
+    const result = await this.pluginInstaller.uninstallPlugin(pluginId, {
       force: body.force,
       keepData: body.keepData,
     });
@@ -393,6 +391,59 @@ export class PluginsController {
       data: {
         valid: true,
         message: 'Validation endpoint - implement with PluginValidator',
+      },
+    };
+  }
+
+  /**
+   * Get all registered plugin routes
+   */
+  @Get('routes')
+  async getPluginRoutes() {
+    const routes = this.routeLoader.getRegisteredRoutes();
+
+    return {
+      success: true,
+      data: {
+        routes: routes.map(r => ({
+          pluginId: r.pluginId,
+          path: r.path,
+          method: r.method,
+          handler: r.handler,
+        })),
+        total: routes.length,
+      },
+    };
+  }
+
+  /**
+   * Get all registered plugin UI components
+   */
+  @Get('ui/components')
+  async getUIComponents() {
+    const menus = this.uiLoader.getMenus();
+    const widgets = this.uiLoader.getWidgets();
+
+    return {
+      success: true,
+      data: {
+        menus: menus.map(m => ({
+          id: m.id,
+          label: m.label,
+          pluginId: m.pluginId,
+          pluginName: m.pluginName,
+          icon: m.icon,
+          path: m.path,
+        })),
+        widgets: widgets.map(w => ({
+          id: w.id,
+          name: w.name,
+          type: w.type,
+          pluginId: w.pluginId,
+          pluginName: w.pluginName,
+        })),
+        totalMenus: menus.length,
+        totalWidgets: widgets.length,
       },
     };
   }
