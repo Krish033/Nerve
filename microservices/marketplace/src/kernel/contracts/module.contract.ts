@@ -59,6 +59,12 @@ export interface ModuleManifest {
 
   /** Feature flags this module uses */
   featureFlags?: string[];
+
+  /** Permissions this module requires or provides */
+  permissions?: string[];
+
+  /** Module settings schema and defaults */
+  settings?: Record<string, any>;
 }
 
 /**
@@ -195,6 +201,9 @@ export interface IKernel {
 
   /** Get module by ID */
   getModule<T extends IModule>(moduleId: string): T | undefined;
+
+  /** Health check for kernel and all modules */
+  healthCheck(): Promise<HealthStatus>;
 }
 
 /**
@@ -215,6 +224,30 @@ export interface IModuleRegistry {
 
   /** Get modules by category */
   getByCategory(category: string): IModule[];
+
+  /** Register menu for tenant */
+  registerMenuForTenant(moduleId: string, menu: MenuRegistration, tenantId?: string): void;
+
+  /** Register route for tenant */
+  registerRouteForTenant(moduleId: string, route: RouteRegistration, tenantId?: string): void;
+
+  /** Register widget for tenant */
+  registerWidgetForTenant(moduleId: string, widget: WidgetRegistration, tenantId?: string): void;
+
+  /** Build navigation tree for UI */
+  buildNavigationTree(tenantId?: string, userPermissions?: string[]): MenuNode[];
+}
+
+/**
+ * Menu Node for navigation tree
+ */
+export interface MenuNode {
+  id: string;
+  label: string;
+  icon?: string;
+  path?: string;
+  order: number;
+  children: MenuNode[];
 }
 
 /**
@@ -344,6 +377,18 @@ export interface IQueueService {
 
   /** Cancel job */
   cancelJob(jobId: JobId): Promise<boolean>;
+
+  /** Get all queue statistics */
+  getAllStats?(): Promise<QueueStats[]>;
+
+  /** Start queue processing */
+  start(): Promise<void>;
+
+  /** Stop queue processing */
+  stop(): Promise<void>;
+
+  /** Check if queue service is healthy */
+  isHealthy(): Promise<boolean>;
 }
 
 /**
@@ -399,6 +444,15 @@ export interface JobStatus {
   error?: string;
 }
 
+export interface QueueStats {
+  name: string;
+  pending: number;
+  active: number;
+  completed: number;
+  failed: number;
+  delayed: number;
+}
+
 /**
  * Tenant Service Interface
  */
@@ -452,6 +506,16 @@ export interface HealthStatus {
   message?: string;
   checks?: Record<string, boolean>;
   timestamp: number;
+}
+
+/**
+ * Event Statistics
+ */
+export interface EventStats {
+  totalEvents: number;
+  activeSubscriptions: number;
+  eventsByType: Record<string, number>;
+  queueSize: number;
 }
 
 /**

@@ -16,6 +16,9 @@ import { RouteProgressBar } from "@/components/shared/RouteProgressBar";
 export const metadata: Metadata = {
   title: "Nurve",
   description: "Nurve — your development workspace.",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({

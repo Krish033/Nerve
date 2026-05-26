@@ -31,6 +31,7 @@ model User {
   activityLogs   ActivityLog[]
   sessions       Session[]
   installedItems UserInstalledItem[]
+  tenantUsers    TenantUser[]
 
   @@index([email])
   @@index([firebaseUid])
@@ -199,4 +200,308 @@ model UserInstalledItem {
   @@index([itemId])
   @@index([userId, isActive])
   @@map("user_installed_items")
+}
+
+// ============================================
+// PLATFORM MODULE SYSTEM
+// ============================================
+
+model Tenant {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?
+  plan        String   @default("free") // free, basic, pro, enterprise
+  status      String   @default("active") // active, suspended, deleted
+  config      Json?    // Tenant-specific configuration
+  features    String[] // Enabled feature flags
+  settings    Json?    // Tenant settings
+  metadata    Json?    // Additional metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  users       TenantUser[]
+  modules     TenantModule[]
+  jobs        Job[]
+  auditLogs   AuditLog[]
+  
+  @@index([slug])
+  @@index([status])
+  @@index([plan])
+  @@map("tenants")
+}
+
+model TenantUser {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  role      String   @default("member") // owner, admin, member, viewer
+  permissions String[] // Direct permissions
+  isActive  Boolean  @default(true)
+  joinedAt  DateTime @default(now())
+  lastAccessedAt DateTime @default(now())
+
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+  @@index([userId])
+  @@map("tenant_users")
+}
+
+model PlatformModule {
+  id          String   @id @default(uuid())
+  moduleId    String   @unique // e.g., "dashboard", "scraper"
+  name        String
+  version     String   @default("1.0.0")
+  description String?
+  author      String?
+  icon        String?
+  status      String   @default("active") // active, disabled, deprecated
+  manifest    Json     // Full manifest.json content
+  settingsSchema Json?  // JSON schema for settings validation
+  defaultSettings Json? // Default settings values
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenantModules TenantModule[]
+  
+  @@index([moduleId])
+  @@index([status])
+  @@map("platform_modules")
+}
+
+model TenantModule {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  moduleId    String
+  module      PlatformModule @relation(fields: [moduleId], references: [id])
+  isEnabled   Boolean  @default(true)
+  settings    Json?    // Tenant-specific module settings
+  config      Json?    // Runtime configuration
+  installedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([tenantId, moduleId])
+  @@index([tenantId])
+  @@index([moduleId])
+  @@map("tenant_modules")
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  permissionId String  @unique // e.g., "scraper.run", "dashboard.view"
+  name        String
+  description String?
+  moduleId    String?  // Associated module
+  category    String   @default("general") // general, module, system
+  scope       String   @default("tenant") // tenant, global, user
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  roles       RolePermission[]
+  
+  @@index([moduleId])
+  @@index([category])
+  @@map("permissions")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  roleId      String   @unique // e.g., "admin", "editor"
+  name        String
+  description String?
+  tenantId    String?  // null = global role
+  isSystem    Boolean  @default(false)
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  permissions RolePermission[]
+  
+  @@index([tenantId])
+  @@map("roles")
+}
+
+model RolePermission {
+  id           String     @id @default(uuid())
+  roleId       String
+  role         Role       @relation(fields: [roleId], references: [id])
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  createdAt    DateTime   @default(now())
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+model Job {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  name        String
+  queue       String   // e.g., "scraper", "processor", "default"
+  data        Json     // Job payload
+  status      String   @default("pending") // pending, active, completed, failed, delayed
+  progress    Int      @default(0) // 0-100
+  attempts    Int      @default(0)
+  maxAttempts Int      @default(3)
+  error       String?  @db.Text
+  result      Json?    // Job result data
+  startedAt   DateTime?
+  completedAt DateTime?
+  failedAt    DateTime?
+  scheduledAt DateTime? // For delayed jobs
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  logs        JobLog[]
+  
+  @@index([tenantId])
+  @@index([queue, status])
+  @@index([status, scheduledAt])
+  @@index([createdAt])
+  @@map("jobs")
+}
+
+model JobLog {
+  id        String   @id @default(uuid())
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id])
+  level     String   // info, warn, error, debug
+  message   String
+  metadata  Json?    // Additional context
+  createdAt DateTime @default(now())
+
+  @@index([jobId])
+  @@index([createdAt])
+  @@map("job_logs")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  tenantId    String?
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id])
+  userId      String?
+  action      String   // e.g., "module.installed", "job.created"
+  resource    String   // e.g., "module:scraper", "job:123"
+  details     Json?    // Additional context
+  ip          String?
+  userAgent   String?
+  severity    String   @default("info") // info, warning, critical
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model SystemEvent {
+  id          String   @id @default(uuid())
+  eventId     String   @unique
+  eventType   String   // e.g., "kernel.ready", "module.registered"
+  moduleId    String?  // Source module
+  tenantId    String?  // Target tenant (if applicable)
+  payload     Json?    // Event data
+  metadata    Json?    // Event metadata (correlationId, timestamp, etc.)
+  processed   Boolean  @default(false)
+  processedAt DateTime?
+  error       String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  @@index([eventType])
+  @@index([moduleId])
+  @@index([tenantId])
+  @@index([processed])
+  @@index([createdAt])
+  @@map("system_events")
+}
+
+model Workflow {
+  id          String   @id @default(uuid())
+  tenantId    String?
+  name        String
+  description String?
+  trigger     String   // Event that triggers this workflow
+  conditions  Json?    // Conditions for execution
+  actions     Json     // Actions to execute
+  isActive    Boolean  @default(true)
+  executionCount Int    @default(0)
+  lastExecutedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  executions  WorkflowExecution[]
+  
+  @@index([tenantId])
+  @@index([trigger])
+  @@index([isActive])
+  @@map("workflows")
+}
+
+model WorkflowExecution {
+  id          String   @id @default(uuid())
+  workflowId  String
+  workflow    Workflow @relation(fields: [workflowId], references: [id])
+  tenantId    String?
+  triggerData Json?    // Data that triggered the workflow
+  context     Json?    // Execution context
+  status      String   @default("pending") // pending, running, completed, failed, cancelled
+  results     Json?    // Action results
+  error       String?  @db.Text
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([workflowId])
+  @@index([tenantId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("workflow_executions")
+}
+
+model Widget {
+  id          String   @id @default(uuid())
+  widgetId    String   @unique // e.g., "recent-activity", "stats-card"
+  moduleId    String   // Source module
+  name        String
+  description String?
+  component   String   // Component identifier
+  category    String   @default("dashboard") // dashboard, sidebar, modal
+  defaultConfig Json? // Default configuration
+  permissions String[] // Required permissions
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  instances   WidgetInstance[]
+  
+  @@index([moduleId])
+  @@index([category])
+  @@map("widgets")
+}
+
+model WidgetInstance {
+  id          String   @id @default(uuid())
+  widgetId    String
+  widget      Widget   @relation(fields: [widgetId], references: [id])
+  tenantId    String
+  userId      String?  // null = available to all users in tenant
+  dashboardId String?  // e.g., "main", "analytics"
+  config      Json?    // Instance-specific configuration
+  position    Int      @default(0) // Display order
+  isVisible   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([dashboardId])
+  @@map("widget_instances")
 }

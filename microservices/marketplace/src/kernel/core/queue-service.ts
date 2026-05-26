@@ -210,7 +210,7 @@ export class QueueService implements IQueueService {
   /**
    * Get all queue statistics
    */
-  getAllStats(): QueueStats[] {
+  async getAllStats(): Promise<QueueStats[]> {
     return Array.from(this.queues.keys()).map((queue) =>
       this.getQueueStats(queue),
     );

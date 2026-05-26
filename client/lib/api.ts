@@ -94,6 +94,15 @@ api.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError, null);
         useAuthStore.getState().logout();
+        
+        // Redirect to login if in browser
+        if (typeof window !== 'undefined') {
+          const currentPath = window.location.pathname;
+          if (!currentPath.startsWith('/auth/')) {
+            window.location.href = `/auth/login?redirect=${encodeURIComponent(currentPath)}`;
+          }
+        }
+        
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

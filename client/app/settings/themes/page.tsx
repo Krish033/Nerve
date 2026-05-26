@@ -12,11 +12,10 @@ import { Heading } from "@/components/shared/heading";
 import {
   Palette,
   CheckCircle2,
-  Type,
-  Box,
   Layout,
   ArrowRight,
   Plus,
+  Box,
 } from "lucide-react";
 
 export default function ThemesSettingsPage() {
@@ -24,22 +23,16 @@ export default function ThemesSettingsPage() {
   const {
     installedThemes,
     activeTheme,
-    activeFont,
-    activeIconPack,
     setActiveTheme,
-    setActiveFont,
-    setActiveIconPack,
     setInstalledThemes,
   } = useThemeStore();
   const [activeTab, setActiveTab] = React.useState<
-    "THEMES" | "FONTS" | "ICONS" | "LAYOUT"
+    "THEMES" | "LAYOUT"
   >("THEMES");
   const [loading, setLoading] = React.useState(false);
   const layoutStore = useLayoutStore();
 
   const myThemes = installedThemes.filter((it) => it.item.type === "THEME");
-  const myFonts = installedThemes.filter((it) => it.item.type === "FONT");
-  const myIcons = installedThemes.filter((it) => it.item.type === "ICON_PACK");
 
   // Sync installed themes when page loads
   useEffect(() => {
@@ -50,14 +43,10 @@ export default function ThemesSettingsPage() {
         setInstalledThemes(data);
         // Also sync active items
         const activeThemeItem = data.find((ui: any) => ui.isActive && ui.item?.type === 'THEME');
-        const activeFontItem = data.find((ui: any) => ui.isActive && ui.item?.type === 'FONT');
-        const activeIconItem = data.find((ui: any) => ui.isActive && ui.item?.type === 'ICON_PACK');
         if (activeThemeItem) setActiveTheme(activeThemeItem.item);
-        if (activeFontItem) setActiveFont(activeFontItem.item);
-        if (activeIconItem) setActiveIconPack(activeIconItem.item);
       })
       .catch((err) => console.error("Failed to sync themes:", err));
-  }, [user?.id, setInstalledThemes, setActiveTheme, setActiveFont, setActiveIconPack]);
+  }, [user?.id, setInstalledThemes, setActiveTheme]);
 
   const handleActivate = async (themeId: string, item: any, type: string) => {
     if (!user) return;
@@ -71,8 +60,6 @@ export default function ThemesSettingsPage() {
       );
       // Optimistically update
       if (type === "THEME") setActiveTheme(item);
-      if (type === "FONT") setActiveFont(item);
-      if (type === "ICON_PACK") setActiveIconPack(item);
 
       setInstalledThemes(
         installedThemes.map((t) => {
@@ -94,10 +81,10 @@ export default function ThemesSettingsPage() {
     <div className="space-y-8">
       <Heading
         title="Appearance"
-        description="Manage themes, fonts, icons, and layout settings."
+        description="Manage themes and layout settings."
       />
       <div className="flex items-center gap-4 border-b border-border overflow-x-auto">
-        {["THEMES", "FONTS", "ICONS", "LAYOUT"].map((tab) => (
+        {["THEMES", "LAYOUT"].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab as any)}
@@ -108,13 +95,9 @@ export default function ThemesSettingsPage() {
                 : "border-transparent text-muted-foreground hover:text-foreground",
             )}
           >
-            {tab === "FONTS"
-              ? "Typography"
-              : tab === "ICONS"
-                ? "Icon Packs"
-                : tab === "LAYOUT"
-                  ? "Layout Engine"
-                  : "Themes"}
+            {tab === "LAYOUT"
+              ? "Layout Engine"
+              : "Themes"}
           </button>
         ))}
       </div>
@@ -133,10 +116,10 @@ export default function ThemesSettingsPage() {
                     key={pos}
                     onClick={() => layoutStore.setSidebarPlacement(pos)}
                     className={cn(
-                      "p-5 rounded-xl border flex flex-col items-center gap-3 transition-colors",
+                      "p-5 rounded-xl border flex flex-col items-center gap-3 transition-all shadow-sm",
                       layoutStore.sidebarPlacement === pos
-                        ? "border-foreground bg-accent text-foreground"
-                        : "border-border bg-card text-muted-foreground hover:border-foreground/30 hover:text-foreground",
+                        ? "border-foreground bg-accent text-foreground shadow-md"
+                        : "border-border bg-card text-foreground/60 hover:border-foreground/30 hover:text-foreground hover:shadow-md",
                     )}
                   >
                     <div className="h-12 w-20 border-2 border-current rounded-lg relative opacity-50 overflow-hidden">
@@ -222,17 +205,17 @@ export default function ThemesSettingsPage() {
                   icon: Box
                 }
               ].map((item) => (
-                <div key={item.title} className="p-4 rounded-xl border border-border bg-card flex justify-between items-center">
+                <div key={item.title} className="p-4 rounded-xl border border-border bg-card shadow-sm flex justify-between items-center">
                   <div className="flex gap-4 items-center">
                     <div className={cn(
                       "p-2 rounded-md border border-border transition-colors",
-                      item.active ? "bg-accent text-foreground" : "bg-muted text-muted-foreground"
+                      item.active ? "bg-accent text-foreground" : "bg-muted text-foreground/60"
                     )}>
                       <item.icon className="w-4 h-4" />
                     </div>
                     <div className="space-y-0.5">
                       <p className="text-sm font-medium text-foreground">{item.title}</p>
-                      <p className="text-xs text-muted-foreground">{item.desc}</p>
+                      <p className="text-xs text-foreground/70">{item.desc}</p>
                     </div>
                   </div>
                   <button
@@ -264,26 +247,41 @@ export default function ThemesSettingsPage() {
               const theme = installedItem.item;
               const isActive = activeTheme?.id === theme.id;
 
+              const themeColors = theme.config?.colors || {};
+              const cardBg = themeColors.card || themeColors.background || '#1a1a1a';
+              const textColor = themeColors.foreground || '#ffffff';
+              const borderCol = themeColors.border || '#333333';
+
               return (
                 <div
                   key={theme.id}
                   className={cn(
-                    "group relative p-5 rounded-xl border transition-colors",
+                    "group relative p-5 rounded-xl border transition-all shadow-sm",
                     isActive
-                      ? "border-foreground/30 bg-accent"
-                      : "border-border bg-card hover:border-foreground/20",
+                      ? "border-foreground/30 shadow-md"
+                      : "hover:shadow-md hover:-translate-y-0.5",
                   )}
+                  style={{
+                    backgroundColor: isActive ? undefined : cardBg,
+                    borderColor: isActive ? undefined : borderCol,
+                  }}
                 >
                   <div className="space-y-5">
                     <div className="flex items-start justify-between">
                       <div className="flex gap-2">
-                        <div className="p-2 bg-muted rounded-md">
-                          <Palette className="w-4 h-4 text-muted-foreground" />
+                        <div
+                          className="p-2 rounded-md"
+                          style={{
+                            backgroundColor: isActive ? undefined : themeColors.background || cardBg,
+                            color: isActive ? undefined : textColor,
+                          }}
+                        >
+                          <Palette className="w-4 h-4 opacity-60" />
                         </div>
                         {/* Color Palette */}
                         <div className="flex -space-x-1.5 items-center ml-2">
-                          {theme.config?.colors && Object.entries(theme.config.colors).map(([key, color]) => (
-                            <div 
+                          {themeColors && Object.entries(themeColors).map(([key, color]) => (
+                            <div
                               key={key}
                               className="w-4 h-4 rounded-full border-2 border-background ring-1 ring-border/20 shadow-sm"
                               style={{ backgroundColor: color as string }}
@@ -300,16 +298,33 @@ export default function ThemesSettingsPage() {
                       )}
                     </div>
 
-                    <div className="space-y-2">
-                      <h3 className="font-semibold text-sm text-foreground">{theme.name}</h3>
-                      <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed font-medium">
+                    <div
+                      className="space-y-2"
+                      style={{
+                        color: isActive ? undefined : textColor,
+                      }}
+                    >
+                      <h3 className="font-semibold text-sm">{theme.name}</h3>
+                      <p className="text-sm opacity-80 line-clamp-3 leading-relaxed">
                         {theme.description}
                       </p>
                     </div>
 
-                    <div className="pt-4 border-t border-border/50 flex items-center justify-between gap-3">
+                    <div
+                      className="pt-4 border-t flex items-center justify-between gap-3"
+                      style={{
+                        borderColor: isActive ? undefined : borderCol,
+                      }}
+                    >
                       <div className="flex flex-col">
-                        <span className="text-xs text-muted-foreground">By {theme.author || 'System'}</span>
+                        <span
+                          className="text-xs opacity-60"
+                          style={{
+                            color: isActive ? undefined : textColor,
+                          }}
+                        >
+                          By {theme.author || 'System'}
+                        </span>
                       </div>
                       <Button
                         variant={isActive ? "secondary" : "default"}
@@ -329,157 +344,15 @@ export default function ThemesSettingsPage() {
           </div>
 
           {myThemes.length === 0 && (
-            <div className="p-12 text-center rounded-xl border border-border bg-card">
-              <Palette className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-              <h3 className="text-lg font-bold">No themes installed</h3>
-              <p className="text-sm text-muted-foreground mt-2 mb-6">
+            <div className="p-12 text-center rounded-xl border border-border bg-card shadow-sm">
+              <Palette className="w-12 h-12 text-foreground/20 mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-foreground">No themes installed</h3>
+              <p className="text-sm text-foreground/70 mt-2 mb-6">
                 Head over to the marketplace to discover new configurations.
               </p>
               <Button asChild size="lg" icon={ArrowRight} iconPlacement="right">
                 <Link href="/marketplace/themes">Explore Marketplace</Link>
               </Button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeTab === "FONTS" && (
-        <div className="space-y-6">
-          <Heading title="Installed fonts" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {myFonts.map((installedItem) => {
-              const font = installedItem.item;
-              const isActive = activeFont?.id === font.id;
-
-              return (
-                <div
-                  key={font.id}
-                  className={cn(
-                    "group relative p-5 rounded-xl border transition-colors",
-                    isActive
-                      ? "border-foreground/30 bg-accent"
-                      : "border-border bg-card hover:border-foreground/20",
-                  )}
-                >
-                  <div className="space-y-4">
-                    <div className="flex items-start justify-between">
-                      <div style={{ fontFamily: font.config?.fontFamily }} className="text-3xl font-semibold text-foreground">
-                        Aa
-                      </div>
-                      {isActive && (
-                        <div className="flex items-center gap-1 px-2 py-0.5 bg-secondary text-secondary-foreground rounded-md text-xs font-medium">
-                          <CheckCircle2 className="w-3 h-3" />
-                          <span>Active</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div style={{ fontFamily: font.config?.fontFamily }}>
-                      <div className="text-base font-semibold">{font.name}</div>
-                      <div className="text-sm text-muted-foreground mt-2 font-medium opacity-70">
-                        The quick brown fox jumps over the lazy dog.
-                      </div>
-                    </div>
-
-                    <div className="pt-4 border-t border-border/50 flex items-center justify-between">
-                      <div className="flex gap-1">
-                         <span className="px-1.5 py-0.5 rounded-md bg-muted text-xs text-muted-foreground">Sans</span>
-                         <span className="px-1.5 py-0.5 rounded-md bg-muted text-xs text-muted-foreground">Variable</span>
-                      </div>
-                      <Button
-                        variant={isActive ? "secondary" : "default"}
-                        size="sm"
-                        className={cn(
-                          "px-5",
-                          isActive && "opacity-50"
-                        )}
-                        disabled={isActive || loading}
-                        onClick={() => handleActivate(font.id, font, "FONT")}
-                        icon={isActive ? CheckCircle2 : Type}
-                      >
-                        {isActive ? "Active" : "Apply"}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          {myFonts.length === 0 && (
-            <div className="p-8 text-center rounded-xl border border-border bg-card">
-              <p className="text-sm text-muted-foreground">No custom fonts installed.</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeTab === "ICONS" && (
-        <div className="space-y-6">
-          <Heading title="Installed icon packs" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {myIcons.map((installedItem) => {
-              const pack = installedItem.item;
-              const isActive = activeIconPack?.id === pack.id;
-
-              return (
-                <div
-                  key={pack.id}
-                  className={cn(
-                    "group relative p-5 rounded-xl border transition-colors",
-                    isActive
-                      ? "border-foreground/30 bg-accent"
-                      : "border-border bg-card hover:border-foreground/20",
-                  )}
-                >
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="p-2 bg-muted rounded-md">
-                        <Box className="w-4 h-4 text-muted-foreground" />
-                      </div>
-                      {isActive && (
-                        <div className="flex items-center gap-1 px-2 py-0.5 bg-secondary text-secondary-foreground rounded-md text-xs font-medium">
-                          <CheckCircle2 className="w-3 h-3" />
-                          <span>Active</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <div className="text-sm font-semibold">{pack.name}</div>
-                      <div className="grid grid-cols-4 gap-3 mt-4">
-                        <Box className="w-4 h-4 text-muted-foreground" />
-                        <Layout className="w-4 h-4 text-muted-foreground" />
-                        <Palette className="w-4 h-4 text-muted-foreground" />
-                        <Type className="w-4 h-4 text-muted-foreground" />
-                      </div>
-                    </div>
-
-                    <div className="pt-4 border-t border-border/50 flex items-center justify-between">
-                      <div className="flex flex-col">
-                        <span className="text-xs text-muted-foreground">1200+ icons</span>
-                      </div>
-                      <Button
-                        variant={isActive ? "secondary" : "default"}
-                        size="sm"
-                        className={cn(
-                          "px-5",
-                          isActive && "opacity-50"
-                        )}
-                        disabled={isActive || loading}
-                        onClick={() => handleActivate(pack.id, pack, "ICON_PACK")}
-                        icon={isActive ? CheckCircle2 : Box}
-                      >
-                        {isActive ? "Active" : "Apply"}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          {myIcons.length === 0 && (
-            <div className="p-8 text-center rounded-xl border border-border bg-card">
-              <p className="text-sm text-muted-foreground">No icon packs installed.</p>
             </div>
           )}
         </div>

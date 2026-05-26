@@ -21,14 +21,16 @@ export function AppMetaSync() {
   }, [seoDescription]);
 
   useEffect(() => {
-    if (!appFaviconUrl) return;
-    let link = document.querySelector<HTMLLinkElement>('link[rel~="icon"]');
-    if (!link) {
-      link = document.createElement("link");
-      link.rel = "icon";
-      document.head.appendChild(link);
-    }
-    link.href = appFaviconUrl;
+    // Remove any existing favicon links first
+    const existingLinks = document.querySelectorAll<HTMLLinkElement>('link[rel="icon"], link[rel="shortcut icon"]');
+    existingLinks.forEach(link => link.remove());
+
+    // Create new favicon link
+    const link = document.createElement("link");
+    link.rel = "icon";
+    link.type = appFaviconUrl?.startsWith("data:image/svg") ? "image/svg+xml" : "image/x-icon";
+    link.href = appFaviconUrl || "/favicon.ico";
+    document.head.appendChild(link);
   }, [appFaviconUrl]);
 
   return null;

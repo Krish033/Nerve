@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import { useAuthStore } from "@/lib/store/useAuth";
 import { useThemeStore } from "@/lib/store/use-theme-store";
+import { api } from "@/lib/api";
+import { logger } from "@/lib/logger";
 
 export function MarketplaceProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuthStore();
@@ -11,19 +13,31 @@ export function MarketplaceProvider({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (!user?.id) return;
 
-    // Fetch user themes
-    fetch(`http://localhost:3002/marketplace/users/${user.id}/themes`)
-      .then((res) => res.json())
-      .then((installedItems) => {
-        setInstalledThemes(installedItems);
+    // Fetch user themes through gateway API
+    const syncMarketplaceItems = async () => {
+      try {
+        const response = await api.get(`/marketplace/users/${user.id}/themes`);
+        const installedItems = response.data;
         
-        const activeTheme = installedItems.find((ui: any) => ui.isActive && ui.item.type === 'THEME');
-        const activeFont = installedItems.find((ui: any) => ui.isActive && ui.item.type === 'FONT');
+        setInstalledThemes(installedItems || []);
+        
+        const activeTheme = installedItems?.find((ui: any) => ui.isActive && ui.item?.type === 'THEME');
+        const activeFont = installedItems?.find((ui: any) => ui.isActive && ui.item?.type === 'FONT');
         
         setActiveTheme(activeTheme ? activeTheme.item : null);
         setActiveFont(activeFont ? activeFont.item : null);
-      })
-      .catch((err) => console.error("Failed to sync marketplace items:", err));
+      } catch (err) {
+        // Log but don't break the app - marketplace is optional
+        logger.warn("Marketplace sync unavailable", { 
+          userId: user.id, 
+          error: err instanceof Error ? err.message : 'Unknown error'
+        });
+        // Set empty defaults to prevent UI breakage
+        setInstalledThemes([]);
+      }
+    };
+
+    syncMarketplaceItems();
   }, [user?.id, setInstalledThemes, setActiveTheme, setActiveFont]);
 
   return <>{children}</>;

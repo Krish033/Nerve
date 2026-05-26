@@ -28,40 +28,53 @@ export function AuthProvider({ children }: AuthProviderProps) {
     retryCount: 0 
   });
   
-  // Refs for cleanup and tracking
+  // Refs for cleanup and tracking - use ref for retry count to avoid stale closure
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const settledRef = useRef(false);
+  const retryCountRef = useRef(0);
+  const isRetryingRef = useRef(false);
 
   // Memoized session refresh with retry logic
   const attemptSessionRefresh = useCallback(async (firebaseUser: FirebaseUser) => {
+    // Prevent concurrent retry attempts
+    if (isRetryingRef.current) return;
+    
     try {
+      isRetryingRef.current = true;
       await refreshSession();
-      setAuthState(prev => ({ ...prev, status: 'authenticated' }));
+      retryCountRef.current = 0; // Reset on success
+      setAuthState(prev => ({ ...prev, status: 'authenticated', retryCount: 0 }));
       setLoading(false);
       setInitialized(true);
     } catch (error) {
       logger.warn("Session refresh failed", { error });
       
-      if (authState.retryCount < MAX_RETRIES) {
+      if (retryCountRef.current < MAX_RETRIES) {
         // Exponential backoff retry
-        const delay = Math.pow(2, authState.retryCount) * 1000;
+        const delay = Math.pow(2, retryCountRef.current) * 1000;
+        retryCountRef.current += 1;
+        
         setTimeout(() => {
-          setAuthState(prev => ({ 
-            ...prev, 
-            retryCount: prev.retryCount + 1 
-          }));
+          isRetryingRef.current = false;
           attemptSessionRefresh(firebaseUser);
         }, delay);
       } else {
         // Max retries reached, log user out
+        retryCountRef.current = 0;
+        isRetryingRef.current = false;
         setAuthState({ status: 'error', retryCount: 0 });
         logout();
         setLoading(false);
         setInitialized(true);
       }
+    } finally {
+      // Only reset if we're not scheduling a retry
+      if (retryCountRef.current >= MAX_RETRIES) {
+        isRetryingRef.current = false;
+      }
     }
-  }, [authState.retryCount, logout, setInitialized, setLoading]);
+  }, [logout, setInitialized, setLoading]);
 
   useEffect(() => {
     // Validate environment on mount
