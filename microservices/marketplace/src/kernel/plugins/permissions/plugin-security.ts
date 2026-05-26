@@ -17,10 +17,11 @@ import {
   ValidatedPluginManifest,
 } from '../contracts';
 
-interface SecurityValidationResult {
+export interface SecurityValidationResult {
   allowed: boolean;
   reason?: string;
   violations: string[];
+  riskLevel?: 'low' | 'medium' | 'high' | 'critical';
 }
 
 interface CapabilityCheck {

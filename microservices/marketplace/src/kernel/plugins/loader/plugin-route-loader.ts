@@ -9,7 +9,7 @@ import { Injectable, Logger, Type, Controller, Post, Get, Put, Delete, Patch, Bo
 import { ModulesContainer, ModuleRef } from '@nestjs/core';
 import { PluginInstance, PluginRoute } from '../contracts';
 
-interface RegisteredRoute {
+export interface RegisteredRoute {
   pluginId: string;
   path: string;
   method: string;

@@ -7,5 +7,5 @@
  * - Controllers
  */
 
-export { PluginRouteLoader } from './plugin-route-loader';
-export { PluginUILoader } from './plugin-ui-loader';
+export { PluginRouteLoader, type RegisteredRoute } from './plugin-route-loader';
+export { PluginUILoader, type RegisteredWidget } from './plugin-ui-loader';

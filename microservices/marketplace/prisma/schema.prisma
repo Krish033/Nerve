@@ -532,3 +532,89 @@ model Plugin {
   @@index([installedAt])
   @@map("plugins")
 }
+
+// Plugin Upload/Staging for Marketplace
+model PluginUpload {
+  id               String   @id @default(uuid())
+  filename         String
+  size             Int
+  checksum         String   @unique
+  tempPath         String
+  status           String   // PENDING_VALIDATION, VALIDATED, STAGED, INSTALL_FAILED, INSTALLED
+  manifest         String?  @db.Text // JSON string
+  validationReport String?  @db.Text // JSON string
+  securityReport   String?  @db.Text // JSON string
+  uploadedAt       DateTime @default(now())
+  stagedAt         DateTime?
+  installedAt      DateTime?
+  installedPluginId String?
+  installError     String?  @db.Text
+
+  @@index([status])
+  @@index([uploadedAt])
+  @@index([checksum])
+  @@map("plugin_uploads")
+}
+
+// Plugin Version History
+model PluginVersion {
+  id          String   @id @default(uuid())
+  pluginId    String
+  version     String
+  manifest    String   @db.Text
+  changeLog   String?  @db.Text
+  createdAt   DateTime @default(now())
+  createdBy   String?
+
+  @@index([pluginId])
+  @@index([version])
+  @@map("plugin_versions")
+}
+
+// Plugin Installation History
+model PluginInstallHistory {
+  id          String   @id @default(uuid())
+  pluginId    String
+  pluginName  String
+  version     String
+  action      String   // install, uninstall, enable, disable, update
+  performedBy String
+  performedAt DateTime @default(now())
+  success     Boolean
+  error       String?  @db.Text
+  details     String?  @db.Text // JSON string
+
+  @@index([pluginId])
+  @@index([performedAt])
+  @@index([action])
+  @@map("plugin_install_history")
+}
+
+// Plugin Logs
+model PluginLog {
+  id          String   @id @default(uuid())
+  pluginId    String
+  level       String   // debug, info, warn, error
+  message     String   @db.Text
+  context     String?  @db.Text // JSON string
+  timestamp   DateTime @default(now())
+
+  @@index([pluginId])
+  @@index([timestamp])
+  @@index([level])
+  @@map("plugin_logs")
+}
+
+// Plugin Health Checks
+model PluginHealthCheck {
+  id          String   @id @default(uuid())
+  pluginId    String
+  healthy     Boolean
+  details     String?  @db.Text
+  timestamp   DateTime @default(now())
+
+  @@index([pluginId])
+  @@index([timestamp])
+  @@index([healthy])
+  @@map("plugin_health_checks")
+}

@@ -17,7 +17,7 @@ interface RegisteredMenu extends PluginMenu {
   pluginName: string;
 }
 
-interface RegisteredWidget extends PluginWidget {
+export interface RegisteredWidget extends PluginWidget {
   pluginId: string;
   pluginName: string;
 }

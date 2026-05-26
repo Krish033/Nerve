@@ -17,6 +17,7 @@ import {
   Bell,
   GitBranch,
   BookOpen,
+  Puzzle,
 } from "lucide-react";
 import { useLayoutStore } from "@/lib/store/use-layout-store";
 
@@ -41,6 +42,9 @@ const submenus: Record<string, { title: string; items: SubmenuItem[] }> = {
       { type: "separator" },
       { type: "label", name: "Security" },
       { name: "Active sessions", href: "/settings/security/active-logins", icon: UserCheck },
+      { type: "separator" },
+      { type: "label", name: "Ecosystem" },
+      { name: "Plugins", href: "/settings/plugins", icon: Puzzle },
       { type: "separator" },
       { type: "label", name: "Logs" },
       { name: "Activity", href: "/settings/logs/activity", icon: Activity },
