@@ -82,6 +82,7 @@ export class PluginInstaller {
       phase: 'INIT',
       startTime: new Date(),
       logs: [],
+      warnings: [],
     };
 
     this.activeInstallations.set(installationId, context);
@@ -195,7 +196,7 @@ export class PluginInstaller {
         warnings: context.warnings.length > 0 ? context.warnings : undefined,
       };
 
-      this.diagnostics.endOperation(operationId, { success: true, pluginId: instance.id });
+      this.diagnostics.endOperation(operationId, { success: true });
       this.emitInstallEvent('plugin.installed', result);
       this.activeInstallations.delete(installationId);
 
