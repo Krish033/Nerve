@@ -104,7 +104,7 @@ export class PluginRuntime implements OnModuleInit, OnModuleDestroy {
       
       // 1. Extract and validate package
       const extraction = await this.storage.extractPackage(packageData);
-      if (!extraction.success) {
+      if (!extraction.success || !extraction.manifest || !extraction.tempPath) {
         return this.createErrorResult('EXTRACTION_FAILED', extraction.error || 'Failed to extract plugin package');
       }
       
@@ -134,7 +134,7 @@ export class PluginRuntime implements OnModuleInit, OnModuleDestroy {
       
       // 4. Check compatibility
       const compatibility = await this.validator.checkCompatibility(manifest);
-      if (!compatible) {
+      if (!compatibility.compatible) {
         await this.storage.cleanupTemp(extraction.tempPath);
         return this.createErrorResult(
           'INCOMPATIBLE',
@@ -144,7 +144,7 @@ export class PluginRuntime implements OnModuleInit, OnModuleDestroy {
       
       // 5. Install to permanent storage
       const installResult = await this.storage.installPlugin(manifest, extraction.tempPath);
-      if (!installResult.success) {
+      if (!installResult.success || !installResult.installPath) {
         return this.createErrorResult('INSTALLATION_FAILED', installResult.error || 'Failed to install plugin');
       }
       

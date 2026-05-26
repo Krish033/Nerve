@@ -11,7 +11,7 @@
  */
 
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { PrismaService } from '../../../prisma.service';
 import {
   PluginInstance,
   PluginManifest,
@@ -170,7 +170,7 @@ export class PluginRegistry {
     // Load all from database
     const dbPlugins = await this.prisma.plugin.findMany();
     
-    return dbPlugins.map(p => {
+    return dbPlugins.map((p: { id: string; name: string; version: string; type: string; manifest: string; state: string; installedAt: Date; enabledAt: Date | null; installPath: string; updatedAt: Date; healthStatus: string | null; failureCount: number; lastFailure: string | null; stateHistory: string | null; }) => {
       // Use cached version if available
       const cached = this.plugins.get(p.id);
       if (cached) return cached;

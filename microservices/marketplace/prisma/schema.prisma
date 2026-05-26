@@ -505,3 +505,30 @@ model WidgetInstance {
   @@index([dashboardId])
   @@map("widget_instances")
 }
+
+// ============================================
+// PLUGIN SYSTEM
+// ============================================
+
+model Plugin {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  version     String
+  type        String   // api-plugin, ui-plugin, workflow-plugin, etc.
+  manifest    String   @db.Text // JSON string of full manifest
+  state       String   // INSTALLED, ENABLED, DISABLED, FAILED, BROKEN
+  installPath String
+  enabledAt   DateTime?
+  healthStatus String?  // healthy, degraded, unhealthy, unknown
+  failureCount Int     @default(0)
+  lastFailure String?  @db.Text // JSON string
+  stateHistory String? @db.Text // JSON array
+  installedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([name])
+  @@index([state])
+  @@index([type])
+  @@index([installedAt])
+  @@map("plugins")
+}

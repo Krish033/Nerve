@@ -17,14 +17,14 @@ import { PluginManifest, ValidatedPluginManifest } from '../contracts';
 
 interface ExtractionResult {
   success: boolean;
-  tempPath?: string;
-  manifest?: PluginManifest;
+  tempPath: string | null;
+  manifest: PluginManifest | null;
   error?: string;
 }
 
 interface InstallationResult {
   success: boolean;
-  installPath?: string;
+  installPath: string | null;
   error?: string;
 }
 
@@ -75,7 +75,7 @@ export class PluginStorage {
         await this.extractTar(packageData, tempDir);
       } else {
         await this.cleanupTemp(tempDir);
-        return { success: false, error: 'Unknown package format. Supported: .zip, .tar.gz' };
+        return { success: false, tempPath: null, manifest: null, error: 'Unknown package format. Supported: .zip, .tar.gz' };
       }
 
       // Find and parse manifest
@@ -87,14 +87,14 @@ export class PluginStorage {
         manifest = JSON.parse(manifestContent);
       } catch {
         await this.cleanupTemp(tempDir);
-        return { success: false, error: 'Invalid or missing manifest.json' };
+        return { success: false, tempPath: null, manifest: null, error: 'Invalid or missing manifest.json' };
       }
 
       // Security: Check for path traversal attempts
       const isSafe = await this.validatePathSafety(tempDir);
       if (!isSafe) {
         await this.cleanupTemp(tempDir);
-        return { success: false, error: 'Package contains unsafe file paths' };
+        return { success: false, tempPath: null, manifest: null, error: 'Package contains unsafe file paths' };
       }
 
       return {
@@ -107,6 +107,8 @@ export class PluginStorage {
       await this.cleanupTemp(tempDir);
       return {
         success: false,
+        tempPath: null,
+        manifest: null,
         error: error instanceof Error ? error.message : 'Extraction failed',
       };
     }
@@ -159,6 +161,7 @@ export class PluginStorage {
     } catch (error) {
       return {
         success: false,
+        installPath: null,
         error: error instanceof Error ? error.message : 'Installation failed',
       };
     }
