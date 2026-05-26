@@ -292,7 +292,7 @@ export class PluginsController {
    * Get plugin diagnostics
    */
   @Get(':id/diagnostics')
-  async getPluginDiagnostics(@Param('id') pluginId: string) {
+  async getPluginDiagnostics(@Param('id') pluginId: string): Promise<any> {
     const plugin = await this.pluginRuntime.getPlugin(pluginId);
 
     if (!plugin) {
@@ -351,7 +351,7 @@ export class PluginsController {
    * Get system-wide plugin metrics
    */
   @Get('system/metrics')
-  async getSystemMetrics() {
+  async getSystemMetrics(): Promise<any> {
     const metrics = this.pluginDiagnostics.getSystemMetrics();
     const allPlugins = await this.pluginRuntime.listPlugins();
 

@@ -116,7 +116,7 @@ export class PluginRuntime implements OnModuleInit, OnModuleDestroy {
           await this.storage.cleanupTemp(extraction.tempPath);
           return this.createErrorResult(
             'VALIDATION_FAILED',
-            `Manifest validation failed: ${validation.errors.map(e => e.message).join(', ')}`,
+            `Manifest validation failed: ${validation.errors.map((e: { message: string }) => e.message).join(', ')}`,
             { errors: validation.errors }
           );
         }
@@ -171,7 +171,7 @@ export class PluginRuntime implements OnModuleInit, OnModuleDestroy {
       
       this.activePlugins.set(instance.id, instance);
       
-      this.diagnostics.endOperation(operationId, { success: true, pluginId: instance.id });
+      this.diagnostics.endOperation(operationId, { success: true });
       this.emitRuntimeEvent('plugin.installed', { pluginId: instance.id, manifest });
       
       return {
@@ -432,7 +432,7 @@ export class PluginRuntime implements OnModuleInit, OnModuleDestroy {
     
     if (!filters) return plugins;
     
-    return plugins.filter(p => {
+    return plugins.filter((p: PluginInstance) => {
       if (filters.state && p.state !== filters.state) return false;
       if (filters.type && p.manifest.type !== filters.type) return false;
       return true;

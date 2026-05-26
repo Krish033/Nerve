@@ -142,7 +142,7 @@ export class PluginRuntimeHardened implements OnModuleInit, OnModuleDestroy {
         'Package extraction timeout'
       );
 
-      if (!extraction.success) {
+      if (!extraction.success || !extraction.tempPath || !extraction.manifest) {
         this.circuitBreaker.recordFailure('install-pipeline', new Error(extraction.error));
         return this.createErrorResult('EXTRACTION_FAILED', extraction.error || 'Failed to extract plugin package');
       }
@@ -163,7 +163,7 @@ export class PluginRuntimeHardened implements OnModuleInit, OnModuleDestroy {
           this.circuitBreaker.recordFailure('install-pipeline', new Error('Validation failed'));
           return this.createErrorResult(
             'VALIDATION_FAILED',
-            `Manifest validation failed: ${validation.errors.map(e => e.message).join(', ')}`,
+            `Manifest validation failed: ${validation.errors.map((e: { message: string }) => e.message).join(', ')}`,
             { errors: validation.errors }
           );
         }
@@ -187,21 +187,24 @@ export class PluginRuntimeHardened implements OnModuleInit, OnModuleDestroy {
         return this.createErrorResult('PLUGIN_EXISTS', `Plugin ${manifest.name} is already installed`);
       }
 
+      // Type guard: tempPath is guaranteed to be string here
+      const safeTempPath: string = tempPath;
+
       // 5. Install to permanent storage
       const installResult = await this.withTimeout(
-        this.storage.installPlugin(manifest, tempPath),
+        this.storage.installPlugin(manifest, safeTempPath),
         30000,
         'Installation timeout'
       );
 
-      if (!installResult.success) {
-        await this.cleanupTemp(tempPath);
+      if (!installResult.success || !installResult.installPath) {
+        await this.cleanupTemp(safeTempPath);
         this.circuitBreaker.recordFailure('install-pipeline', new Error(installResult.error));
         return this.createErrorResult('INSTALLATION_FAILED', installResult.error || 'Failed to install plugin');
       }
 
       // 6. Create plugin instance
-      const instance = await this.createPluginInstance(manifest, installResult.installPath!);
+      const instance = await this.createPluginInstance(manifest, installResult.installPath);
 
       // Initialize memory profile
       if (this.config.enableMemoryGuard) {
@@ -219,7 +222,7 @@ export class PluginRuntimeHardened implements OnModuleInit, OnModuleDestroy {
 
       // Record success
       this.circuitBreaker.recordSuccess('install-pipeline');
-      this.diagnostics.endOperation(operationId, { success: true, pluginId: instance.id });
+      this.diagnostics.endOperation(operationId, { success: true });
       this.emitRuntimeEvent('plugin.installed', { pluginId: instance.id, manifest });
 
       // 9. Auto-enable if configured
@@ -283,7 +286,7 @@ export class PluginRuntimeHardened implements OnModuleInit, OnModuleDestroy {
     if (this.config.enableMemoryGuard) {
       const memoryCheck = this.memoryGuard.checkMemoryLimits(pluginId);
       if (!memoryCheck.allowed) {
-        return this.createErrorResult('MEMORY_LIMIT', memoryCheck.reason);
+        return this.createErrorResult('MEMORY_LIMIT', memoryCheck.reason || 'Memory limit exceeded');
       }
     }
 

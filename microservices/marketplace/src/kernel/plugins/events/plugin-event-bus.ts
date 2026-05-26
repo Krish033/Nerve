@@ -133,11 +133,10 @@ export class PluginEventBus {
 
     try {
       // Emit event
-      this.eventEmitter.emit(namespacedEvent, {
-        ...payload,
-        _pluginId: pluginId,
-        _timestamp: Date.now(),
-      });
+      const eventPayload = typeof payload === 'object' && payload !== null
+        ? { ...payload, _pluginId: pluginId, _timestamp: Date.now() }
+        : { data: payload, _pluginId: pluginId, _timestamp: Date.now() };
+      this.eventEmitter.emit(namespacedEvent, eventPayload);
 
       return { success: true };
     } catch (error) {
