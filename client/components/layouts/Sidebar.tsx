@@ -48,11 +48,11 @@ export const Sidebar = () => {
       href={href}
       aria-label={label}
       className={cn(
-        'group relative h-9 w-9 flex items-center justify-center rounded-md transition-colors',
+        'group relative h-9 w-9 flex items-center justify-center rounded-lg transition-all duration-200',
         !isHorizontal && 'mx-auto',
         active
-          ? 'bg-accent text-foreground'
-          : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+          ? 'bg-muted text-foreground border border-border/50'
+          : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
       )}
     >
       <Icon className="h-[18px] w-[18px]" />

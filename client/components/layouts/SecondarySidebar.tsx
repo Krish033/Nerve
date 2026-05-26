@@ -156,17 +156,17 @@ export const SecondarySidebar = () => {
               key={item.href}
               href={item.href!}
               className={cn(
-                "group flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-sm transition-colors",
+                "group flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200",
                 active
-                  ? "bg-accent text-foreground font-medium"
-                  : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+                  ? "bg-muted/50 text-foreground font-medium border border-border/50"
+                  : "text-muted-foreground hover:bg-muted/30 hover:text-foreground",
               )}
             >
-              <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex items-center gap-3 min-w-0">
                 {Icon && (
                   <Icon className={cn(
                     "h-4 w-4 shrink-0 transition-colors",
-                    active ? "text-foreground" : "text-muted-foreground/70 group-hover:text-foreground"
+                    active ? "text-foreground" : "text-muted-foreground/60 group-hover:text-foreground"
                   )} />
                 )}
                 <span className="truncate">{item.name}</span>
@@ -174,8 +174,8 @@ export const SecondarySidebar = () => {
 
               {item.count !== undefined && (
                 <span className={cn(
-                  "shrink-0 text-[11px] font-medium tabular-nums px-1.5 py-0.5 rounded-md",
-                  active ? "bg-background/60 text-foreground" : "bg-muted text-muted-foreground"
+                  "shrink-0 text-[11px] font-medium tabular-nums px-2 py-0.5 rounded-full",
+                  active ? "bg-background text-muted-foreground border border-border/50" : "bg-muted text-muted-foreground"
                 )}>
                   {item.count}
                 </span>

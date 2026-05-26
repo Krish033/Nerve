@@ -167,8 +167,8 @@ export const CommandPalette = () => {
                         onClick={() => handleSelect(item)}
                         onMouseEnter={() => setSelectedIndex(globalIndex)}
                         className={cn(
-                          "w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-left group",
-                          isSelected ? "bg-accent text-foreground" : "hover:bg-accent/50 text-foreground"
+                          "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-left group",
+                          isSelected ? "bg-muted text-foreground border border-border/50" : "hover:bg-muted/60 text-foreground"
                         )}
                       >
                         <item.icon className={cn("h-4 w-4 shrink-0", isSelected ? "text-foreground" : "text-muted-foreground")} />
